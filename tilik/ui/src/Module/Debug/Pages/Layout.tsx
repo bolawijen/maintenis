@@ -264,6 +264,10 @@ const Layout = () => {
 
     useEffect(() => {
         if (getDebugQueryInfo.isSuccess && getDebugQueryInfo.data && getDebugQueryInfo.data.length) {
+            if (autoLatest) {
+                changeEntry(getDebugQueryInfo.data[0]);
+                return;
+            }
             if (!searchParams.has('debugEntry')) {
                 changeEntry(getDebugQueryInfo.data[0]);
                 return;
@@ -273,7 +277,7 @@ const Layout = () => {
                 changeEntry(getDebugQueryInfo.data[0]);
             }
         }
-    }, [getDebugQueryInfo.isSuccess, getDebugQueryInfo.data, searchParams]);
+    }, [getDebugQueryInfo.isSuccess, getDebugQueryInfo.data, searchParams, autoLatest]);
 
     const clearCollectorAndData = () => {
         searchParams.delete('collector');
@@ -381,14 +385,9 @@ const Layout = () => {
     const onUpdatesHandler = useCallback(async (event: MessageEvent) => {
         const data = JSON.parse(event.data);
         if (data.type && data.type === EventTypesEnum.DebugUpdated) {
-            if (selectedCollector === CollectorsMap.Log && data.payload) {
-                setCollectorData((prevData) => {
-                    const currentLogs = Array.isArray(prevData) ? prevData : [];
-                    return [data.payload, ...currentLogs];
-                });
-            }
+            onRefreshHandler();
         }
-    }, [selectedCollector]);
+    }, [onRefreshHandler]);
 
     useServerSentEvents(backendUrl, onUpdatesHandler, autoLatest);
 
