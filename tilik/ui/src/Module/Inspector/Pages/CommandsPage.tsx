@@ -70,7 +70,7 @@ export const CommandsPage = () => {
                     <>
                         <Typography>
                             Add a command to the "yiisoft/yii-debug-api" section into "params.php" on the backend to be
-                            able to run the command from the Yii Dev Panel.
+                            able to run the command from the MainTenis Tilik.
                         </Typography>
                         <Typography>
                             You may inspect the section with{' '}

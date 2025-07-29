@@ -72,7 +72,7 @@ export function IndexPage() {
     return (
         <Grid container spacing={2}>
             <Grid item md={6} xs={12}>
-                <h2>Yii Dev Panel</h2>
+                <h2>MainTenis Tilik</h2>
                 <Typography>
                     Default backend url is: <b>{defaultBackendUrl}</b>
                 </Typography>

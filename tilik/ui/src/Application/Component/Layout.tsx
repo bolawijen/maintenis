@@ -117,7 +117,7 @@ export const Layout = React.memo(({children}: React.PropsWithChildren) => {
                         textDecoration: 'none',
                     }}
                 >
-                    Yii Dev Panel
+                    MainTenis Tilik
                 </Link>
             </Typography>
             <List>
