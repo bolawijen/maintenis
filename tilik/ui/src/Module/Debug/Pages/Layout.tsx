@@ -325,11 +325,12 @@ const Layout = () => {
         }
         dispatch(changeEntryAction(null));
     };
-    const collectorName = useMemo(() => selectedCollector.split('\\').pop(), [selectedCollector]);
+    const collectorName = useMemo(() => selectedCollector, [selectedCollector]);
 
     const links: LinkProps[] = useMemo(
-        () =>
-            !debugEntry
+        () => {
+            console.debug({debugEntry})
+            return !debugEntry || !debugEntry.collectors
                 ? []
                 : debugEntry.collectors
                       .map((collector, index) => ({
@@ -353,7 +354,8 @@ const Layout = () => {
                               return 1;
                           }
                           return a.name.localeCompare(b.name);
-                      }),
+                      })
+        },
         [debugEntry],
     );
 
