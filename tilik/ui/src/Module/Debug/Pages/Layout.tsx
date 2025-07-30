@@ -1,122 +1,50 @@
-import {ReactJSXElement} from '@emotion/react/types/jsx-namespace';
-import {Check, Error, HelpOutline, Refresh} from '@mui/icons-material';
-import InboxIcon from '@mui/icons-material/Inbox';
+import * as React from 'react';
+import Switch from '@mui/material/Switch';
+import clipboardCopy from 'clipboard-copy';
+import EmptyDebugData from './EmptyDebugData';
 import ListIcon from '@mui/icons-material/List';
 import MailIcon from '@mui/icons-material/Mail';
+import InboxIcon from '@mui/icons-material/Inbox';
 import ReplayIcon from '@mui/icons-material/Replay';
-import {
-    Alert,
-    AlertTitle,
-    Autocomplete,
-    Box,
-    Button,
-    Chip,
-    CircularProgress,
-    LinearProgress,
-    Stack,
-    TextField,
-    Tooltip,
-    Typography,
-} from '@mui/material';
-import EmptyDebugData from './EmptyDebugData';
+import untry from '@maintenis/tilik-sdk/Helper/untry';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import {changeAutoLatest} from '@maintenis/tilik-sdk/API/Application/ApplicationContext';
-import {changeEntryAction, useDebugEntry} from '@maintenis/tilik-sdk/API/Debug/Context';
 import {
+    Box,
+    Alert,
+    Stack,
+    Button,
+    Tooltip,
+    AlertTitle,
+    LinearProgress,
+    CircularProgress,
+} from '@mui/material';
+import {
+    debugApi,
     DebugEntry,
-    useLazyGetCollectorInfoQuery,
     useLazyGetDebugQuery,
+    useLazyGetCollectorInfoQuery,
 } from '@maintenis/tilik-sdk/API/Debug/Debug';
-import {ErrorFallback} from '@maintenis/tilik-sdk/Component/ErrorFallback';
-import {FullScreenCircularProgress} from '@maintenis/tilik-sdk/Component/FullScreenCircularProgress';
 import {InfoBox} from '@maintenis/tilik-sdk/Component/InfoBox';
-import {LinkProps, MenuPanel} from '@maintenis/tilik-sdk/Component/MenuPanel';
-import {EventTypesEnum, useServerSentEvents} from '@maintenis/tilik-sdk/Component/useServerSentEvents';
-import {buttonColorHttp} from '@maintenis/tilik-sdk/Helper/buttonColor';
 import {CollectorsMap} from '@maintenis/tilik-sdk/Helper/collectors';
+import {Check, Error, HelpOutline, Refresh} from '@mui/icons-material';
+import {ErrorFallback} from '@maintenis/tilik-sdk/Component/ErrorFallback';
+import {isDebugEntryAboutWeb} from '@maintenis/tilik-sdk/Helper/debugEntry';
+import {LinkProps, MenuPanel} from '@maintenis/tilik-sdk/Component/MenuPanel';
+import {changeEntryAction, useDebugEntry} from '@maintenis/tilik-sdk/API/Debug/Context';
+import {changeAutoLatest} from '@maintenis/tilik-sdk/API/Application/ApplicationContext';
 import {getCollectedCountByCollector} from '@maintenis/tilik-sdk/Helper/collectorsTotal';
-import {isDebugEntryAboutConsole, isDebugEntryAboutWeb} from '@maintenis/tilik-sdk/Helper/debugEntry';
-import {formatDate} from '@maintenis/tilik-sdk/Helper/formatDate';
-import ModuleLoader from '@yiisoft/yii-dev-panel/Application/Pages/RemoteComponent';
-import {DatabasePanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/DatabasePanel';
-import {EventPanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/EventPanel';
-import {ExceptionPanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/ExceptionPanel';
-import {FilesystemPanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/FilesystemPanel';
-import {LogPanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/LogPanel';
-import {MailerPanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/MailerPanel';
-import {MiddlewarePanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/MiddlewarePanel';
-import {RequestPanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/RequestPanel';
-import {ServicesPanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/ServicesPanel';
-import {TimelinePanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/TimelinePanel';
-import {VarDumperPanel} from '@yiisoft/yii-dev-panel/Module/Debug/Component/Panel/VarDumperPanel';
-import {DumpPage} from '@yiisoft/yii-dev-panel/Module/Debug/Pages/DumpPage';
+import {DebugEntryAutocomplete} from '@yiisoft/yii-dev-panel/Module/Debug/Component/DebugEntryAutocomplete';
+import {EventMessage, EventTypesEnum, useServerSentEvents} from '@maintenis/tilik-sdk/Component/useServerSentEvents';
 import {useDoRequestMutation, usePostCurlBuildMutation} from '@yiisoft/yii-dev-panel/Module/Inspector/API/Inspector';
-import {useSelector} from '@yiisoft/yii-dev-panel/store';
-import clipboardCopy from 'clipboard-copy';
-import * as React from 'react';
-import {HTMLAttributes, useCallback, useEffect, useMemo, useState} from 'react';
-import {ErrorBoundary} from 'react-error-boundary';
-import {useDispatch} from 'react-redux';
-import {Outlet} from 'react-router';
-import {useSearchParams} from 'react-router-dom';
+import {FullScreenCircularProgress} from '@maintenis/tilik-sdk/Component/FullScreenCircularProgress';
 import {useBreadcrumbs} from '@yiisoft/yii-dev-panel/Application/Context/BreadcrumbsContext';
+import {CollectorData} from '@yiisoft/yii-dev-panel/Module/Debug/Component/CollectorData';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useSelector} from '@yiisoft/yii-dev-panel/store';
+import {ErrorBoundary} from 'react-error-boundary';
+import {useSearchParams} from 'react-router-dom';
+import {useDispatch} from 'react-redux';
 
-
-type CollectorDataProps = {
-    collectorData: any;
-    selectedCollector: string;
-};
-
-function CollectorData({collectorData, selectedCollector}: CollectorDataProps) {
-    const baseUrl = useSelector((state) => state.application.baseUrl) as string;
-    const pages: {[name: string]: (data: any) => JSX.Element} = {
-        [CollectorsMap.Mailer]: (data: any) => <MailerPanel data={data} />,
-        [CollectorsMap.Service]: (data: any) => <ServicesPanel data={data} />,
-        [CollectorsMap.Timeline]: (data: any) => <TimelinePanel data={data} />,
-        [CollectorsMap.Log]: (data: any) => <LogPanel data={data} />,
-        [CollectorsMap.Database]: (data: any) => <DatabasePanel data={data} />,
-        [CollectorsMap.FilesystemStream]: (data: any) => <FilesystemPanel data={data} />,
-        [CollectorsMap.Request]: (data: any) => <RequestPanel data={data} />,
-        [CollectorsMap.Middleware]: (data: any) => <MiddlewarePanel {...data} />,
-        [CollectorsMap.Event]: (data: any) => <EventPanel events={data} />,
-        [CollectorsMap.Exception]: (data: any) => <ExceptionPanel exceptions={data} />,
-        [CollectorsMap.VarDumper]: (data: any) => <VarDumperPanel data={data} />,
-        default: (data: any) => {
-            if (typeof data === 'object' && data.__isPanelRemote__) {
-                return (
-                    <React.Suspense fallback={`Loading`}>
-                        <ModuleLoader
-                            url={baseUrl + data.url}
-                            module={data.module}
-                            scope={data.scope}
-                            props={{data: data.data}}
-                        />
-                    </React.Suspense>
-                );
-            }
-            if (typeof data === 'string') {
-                try {
-                    JSON.parse(data);
-                } catch (e) {
-                    if (e instanceof SyntaxError) {
-                        return <Box dangerouslySetInnerHTML={{__html: data}} />;
-                    }
-                    console.error(e);
-                }
-            }
-            return <DumpPage data={data} />;
-        },
-    };
-
-    if (selectedCollector === '') {
-        return <Outlet />;
-    }
-
-    const renderPage = selectedCollector in pages ? pages[selectedCollector] : pages.default;
-
-    return renderPage(collectorData);
-}
 
 function HttpRequestError({error}: {error: any}) {
     console.error(error);
@@ -129,92 +57,6 @@ function HttpRequestError({error}: {error: any}) {
         </Box>
     );
 }
-
-type DebugEntryAutocompleteProps = {
-    data: DebugEntry[] | undefined;
-    onChange: (data: DebugEntry | null) => void;
-};
-
-const DebugEntryAutocomplete = ({data, onChange}: DebugEntryAutocompleteProps) => {
-    const debugEntry = useDebugEntry();
-
-    const renderLabel = useCallback((entry: DebugEntry): string => {
-        if (isDebugEntryAboutConsole(entry)) {
-            return [entry.summary[CollectorsMap.Command]?.exitCode === 0 ? '[OK]' : '[ERROR]', entry.summary[CollectorsMap.Command]?.input].filter(Boolean).join(' ');
-        }
-        if (isDebugEntryAboutWeb(entry)) {
-            return ['[' + entry.summary[CollectorsMap.Request]?.response.statusCode + ']', entry.summary[CollectorsMap.Request]?.request.method, entry.summary[CollectorsMap.Request]?.request.path].join(' ');
-        }
-        return entry.id;
-    }, []);
-    const renderOptions = useCallback(
-        (props: HTMLAttributes<HTMLElement>, entry: DebugEntry): ReactJSXElement => (
-            <Stack
-                {...props}
-                key={entry.id}
-                component="li"
-                direction="row"
-                spacing={2}
-                sx={{'& > img': {mr: 2, flexShrink: 0}}}
-            >
-                {isDebugEntryAboutWeb(entry) && (
-                    <>
-                        <Typography component="span" sx={{flex: 1}}>
-                            <Chip
-                                sx={{borderRadius: '5px 5px', margin: '0 2px'}}
-                                label={`${entry.summary[CollectorsMap.Request]?.response.statusCode} ${entry.summary[CollectorsMap.Request]?.request.method}`}
-                                color={buttonColorHttp(entry.summary[CollectorsMap.Request]?.statusCode)}
-                            />
-                            <span style={{margin: '0 2px'}}>{entry.summary[CollectorsMap.Request]?.request.path}</span>
-                        </Typography>
-                        <Typography component="span" sx={{margin: '0 auto'}}>
-                            <span>{formatDate(entry.summary[CollectorsMap.WebAppInfo]?.request.startTime)}</span>
-                        </Typography>
-                    </>
-                )}
-                {isDebugEntryAboutConsole(entry) && (
-                    <>
-                        <Typography component="span" sx={{flex: 1}}>
-                            {entry.summary[CollectorsMap.Command]?.exitCode === 0 ? (
-                                <Chip label="OK" color={'success'} sx={{borderRadius: '5px 5px', margin: '0 2px'}} />
-                            ) : (
-                                <Chip
-                                    label={`CODE: ${entry.summary[CollectorsMap.Command]?.exitCode ?? 'Unknown'}`}
-                                    color={'error'}
-                                    sx={{borderRadius: '5px 5px', margin: '0 2px'}}
-                                />
-                            )}
-                            <span style={{margin: '0 2px'}}>{entry.summary[CollectorsMap.Command]?.input ?? 'Unknown'}</span>
-                        </Typography>
-                        <Typography component="span" sx={{margin: '0 auto'}}>
-                            <span>{formatDate(entry.summary[CollectorsMap.ConsoleAppInfo].request.startTime)}</span>
-                        </Typography>
-                    </>
-                )}
-            </Stack>
-        ),
-        [],
-    );
-
-    return (
-        <Autocomplete
-            value={debugEntry}
-            options={(data || []) as DebugEntry[]}
-            getOptionLabel={renderLabel}
-            renderOption={renderOptions}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            renderInput={(params) => <TextField {...params} label="Record" />}
-            onChange={(event, value) => {
-                if (typeof value === 'object') {
-                    onChange(value);
-                } else {
-                    onChange(null);
-                }
-            }}
-            sx={{my: 1}}
-        />
-    );
-};
 
 const NoCollectorsInfoBox = React.memo(() => {
     return (
@@ -245,17 +87,20 @@ const weights = {
     [CollectorsMap.VarDumper]: 6,
 };
 
-const Layout = () => {
+
+type LogEntry = {};
+
+export const Layout = () => {
     const dispatch = useDispatch();
-    const autoLatest = useSelector((state) => state.application.autoLatest);
     const debugEntry = useDebugEntry();
+    const autoLatest = useSelector((state) => state.application.autoLatest);
+    const backendUrl = useSelector((state) => state.application.baseUrl) as string;
     const [searchParams, setSearchParams] = useSearchParams();
     const [getDebugQuery, getDebugQueryInfo] = useLazyGetDebugQuery();
     const [selectedCollector, setSelectedCollector] = useState<string>(() => searchParams.get('collector') || '');
     const [collectorData, setCollectorData] = useState<any>(undefined);
     const [collectorInfo, collectorQueryInfo] = useLazyGetCollectorInfoQuery();
     const [postCurlBuildInfo, postCurlBuildQueryInfo] = usePostCurlBuildMutation();
-    const backendUrl = useSelector((state) => state.application.baseUrl) as string;
 
     const onRefreshHandler = useCallback(() => {
         getDebugQuery();
@@ -294,17 +139,20 @@ const Layout = () => {
         if (!debugEntry) {
             return;
         }
-        collectorInfo({id: debugEntry.id, collector})
-            .then(({data, isError}) => {
-                if (isError) {
-                    clearCollectorAndData();
-                    changeEntry(null);
-                    return;
-                }
-                setSelectedCollector(collector);
-                setCollectorData(data);
-            })
-            .catch(clearCollectorAndData);
+        (async function() {
+            const [{data, isError}, err] = await untry(collectorInfo({id: debugEntry.id, collector}));
+            if (err) {
+                clearCollectorAndData();
+                return;
+            }
+            if (isError) {
+                clearCollectorAndData();
+                changeEntry(null);
+                return;
+            }
+            setSelectedCollector(collector);
+            setCollectorData(data);
+        })();
     }, [searchParams, debugEntry]);
 
     useEffect(() => {
@@ -328,34 +176,30 @@ const Layout = () => {
     const collectorName = useMemo(() => selectedCollector, [selectedCollector]);
 
     const links: LinkProps[] = useMemo(
-        () => {
-            console.debug({debugEntry})
-            return !debugEntry || !debugEntry.collectors
-                ? []
-                : debugEntry.collectors
-                      .map((collector, index) => ({
-                          name: collector,
-                          text: collector,
-                          href: `/debug?collector=${collector}&debugEntry=${debugEntry.id}`,
-                          icon: index % 2 === 0 ? <InboxIcon /> : <MailIcon />,
-                          badge: getCollectedCountByCollector(collector as CollectorsMap, debugEntry),
-                      }))
-                      .sort((a, b) => {
-                          const weightA = weights[a.name] ?? null;
-                          const weightB = weights[b.name] ?? null;
+        () => !debugEntry || !debugEntry.collectors
+            ? [] : debugEntry.collectors
+                .map((collector, index) => ({
+                    name: collector,
+                    text: collector,
+                    icon: index % 2 === 0 ? <InboxIcon /> : <MailIcon />,
+                    href: `/debug?collector=${collector}&debugEntry=${debugEntry.id}`,
+                    badge: getCollectedCountByCollector(collector as CollectorsMap, debugEntry),
+                }))
+                .sort((a, b) => {
+                    const weightA = weights[a.name] ?? null;
+                    const weightB = weights[b.name] ?? null;
 
-                          if (weightA !== null && weightB !== null) {
-                              return weightA - weightB;
-                          }
-                          if (weightA !== null) {
-                              return -1;
-                          }
-                          if (weightB !== null) {
-                              return 1;
-                          }
-                          return a.name.localeCompare(b.name);
-                      })
-        },
+                    if (weightA !== null && weightB !== null) {
+                        return weightA - weightB;
+                    }
+                    if (weightA !== null) {
+                        return -1;
+                    }
+                    if (weightB !== null) {
+                        return 1;
+                    }
+                    return a.name.localeCompare(b.name);
+                }),
         [debugEntry],
     );
 
@@ -384,14 +228,20 @@ const Layout = () => {
     }, [debugEntry]);
     const onEntryChangeHandler = useCallback(changeEntry, [changeEntry]);
 
-    const onUpdatesHandler = useCallback(async (event: MessageEvent) => {
-        const data = JSON.parse(event.data);
-        if (data.type && data.type === EventTypesEnum.DebugUpdated) {
-            onRefreshHandler();
-        }
-    }, [onRefreshHandler]);
+    const onLogUpdatesHandler = useCallback(
+        async (message: EventMessage) => {
+            if (message.type === EventTypesEnum.LogUpdated
+                && selectedCollector === CollectorsMap.Log
+                && message.payload
+                && debugEntry
+            ) {
+                setCollectorData((data) => [message.payload, ...data]);
+            }
+        },
+        [debugEntry, selectedCollector, dispatch],
+    );
 
-    useServerSentEvents(backendUrl, onUpdatesHandler, autoLatest);
+    useServerSentEvents(backendUrl, onLogUpdatesHandler, autoLatest);
 
     const autoLatestHandler = () => {
         const newAutoLatestState = !autoLatest;
@@ -520,5 +370,3 @@ const Layout = () => {
         </>
     );
 };
-
-export {Layout};

@@ -219,7 +219,7 @@ export const routes = {
           const parsedLogEntry = parseSingleLogEntry(logMessage);
           if (parsedLogEntry) {
             const encoder = new TextEncoder();
-            const message = `data: {\"type\": \"debug-updated\", \"payload\": ${JSON.stringify(parsedLogEntry)}}\n\n`;
+            const message = `data: {\"type\": \"log-updated\", \"payload\": ${JSON.stringify(parsedLogEntry)}}\n\n`;
             for (const controller of activeEventStreamControllers) {
               try {
                 controller.enqueue(encoder.encode(message));

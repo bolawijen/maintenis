@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "dev": "bun --filter './debug/**' index.ts",
+    "build:tilik-sdk": "cd tilik/sdk && bun run build"
+  }
+}
