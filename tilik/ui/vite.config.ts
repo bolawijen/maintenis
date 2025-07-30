@@ -39,6 +39,15 @@ export default defineConfig(({mode}) => {
             // jsxImportSource: '@welldone-software/why-did-you-render',
         }),
         svgrPlugin(),
+        {
+            name: 'create-sdk-build-timestamp',
+            buildStart: async (options) => {
+                if (mode === 'development') {
+                    const timestamp = new Date().toString();
+                    await Bun.write('src/sdk-build.ts', `export default '${timestamp}';`);
+                }
+            },
+        },
     ],
     base: process.env.VITE_ENV === 'github' ? 'https://yiisoft.github.io/yii-dev-panel/' : './',
     build: {

@@ -22,7 +22,7 @@
     "access": "public"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "bun --bun vite",
     "start": "vite",
     "build": "rm -rf dist && VITE_BUILD_ID=${VITE_BUILD_ID:-`git rev-parse --short HEAD`} VITE_ENV=${VITE_ENV:-github} bunx vite build",
     "build:dev": "VITE_BUILD_ID=${VITE_BUILD_ID:-`git rev-parse --short HEAD`} VITE_ENV=${VITE_ENV:-dev} vite build",
