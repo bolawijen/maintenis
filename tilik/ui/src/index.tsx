@@ -1,6 +1,5 @@
 import {Config} from '@maintenis/tilik-sdk/Config';
 import reportWebVitals from '@yiisoft/yii-dev-panel/reportWebVitals';
-import './sdk-build';
 
 Config.appEnv = import.meta.env.VITE_ENV;
 
@@ -10,3 +9,5 @@ import('@yiisoft/yii-dev-panel/bootstrap');
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+
+import('./sdk-build').catch((err) => {});

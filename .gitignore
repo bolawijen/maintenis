@@ -1,2 +1,7 @@
+.qodo
+.env
+GEMINI.md
+gemini_logs.md
 node_modules
 dist
+tests
