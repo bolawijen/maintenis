@@ -188,7 +188,7 @@ export const routes = {
           activeEventStreamControllers.add(controller);
           
           const encoder = new TextEncoder();
-          const initialMessage = `data: {\"type\": \"connected\"}\n\n`;
+          const initialMessage = `event: connected\ndata:\n\n`;
           controller.enqueue(encoder.encode(initialMessage));
           sendHeartbeat(controller)
         },
@@ -219,7 +219,7 @@ export const routes = {
           const parsedLogEntry = parseSingleLogEntry(logMessage);
           if (parsedLogEntry) {
             const encoder = new TextEncoder();
-            const message = `data: {\"type\": \"log-updated\", \"payload\": ${JSON.stringify(parsedLogEntry)}}\n\n`;
+            const message = `event: log-updated\ndata: ${JSON.stringify(parsedLogEntry)}\n\n`;
             for (const controller of activeEventStreamControllers) {
               try {
                 controller.enqueue(encoder.encode(message));

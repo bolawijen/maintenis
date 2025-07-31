@@ -20,16 +20,22 @@ export enum EventTypesEnum {
     LogUpdated = 'log-updated',
 }
 
-export type EventTypes = DebugUpdatedType;
+export type EventTypes = EventTypesEnum;
 
-export type EventMessage = {
-    type: string;
-    payload: any;
-};
+// Define specific payload types
+type ConnectedPayload = undefined;
+type LogUpdatedPayload = any; // This will be the LogEntry object directly
+type DebugUpdatedPayload = any; // Assuming DebugUpdated still has a payload
+
+// Define the message structure for the callback
+export type SseCallbackMessage =
+    | { type: EventTypesEnum.Connected; payload: ConnectedPayload }
+    | { type: EventTypesEnum.LogUpdated; payload: LogUpdatedPayload }
+    | { type: EventTypesEnum.DebugUpdated; payload: DebugUpdatedPayload };
 
 export const useServerSentEvents = (
     backendUrl: string,
-    onMessage: (message: EventMessage) => void,
+    onMessage: (message: SseCallbackMessage) => void,
     subscribe: boolean,
     client: typeof fetch | typeof EventSource = fetch,
 ) => {
@@ -61,17 +67,38 @@ export const useServerSentEvents = (
         }
 
         const currentObserver = observerRef.current;
-        const handler = (event: MessageEvent<EventTypes>) => {
-            const message = JSON.parse(event.data) as EventMessage;
-            if (message.type !== EventTypesEnum.Connected) {
-                messageHandlerRef.current(message);
+        const handler = (event: MessageEvent) => {
+            let payload: any = undefined;
+            if (event.data) {
+                try {
+                    payload = JSON.parse(event.data);
+                } catch (e) {
+                    console.warn(`[useServerSentEvents] Could not parse event data as JSON for type ${event.type}:`, event.data, e);
+                }
             }
+
+            const message: SseCallbackMessage = {
+                type: event.type as EventTypesEnum,
+                payload: payload,
+            };
+
+            messageHandlerRef.current(message);
         }
 
-        currentObserver?.subscribe(handler);
+        // Subscribe to all relevant event types
+        Object.values(EventTypesEnum).forEach(eventType => {
+            currentObserver?.subscribe(eventType, handler);
+        });
+
+        // Also subscribe to 'message' for general events or fallback
+        // currentObserver?.subscribe('message', handler);
 
         return () => {
-            currentObserver?.unsubscribe(handler);
+            // Unsubscribe from all relevant event types
+            Object.values(EventTypesEnum).forEach(eventType => {
+                currentObserver?.unsubscribe(eventType, handler);
+            });
+            // currentObserver?.unsubscribe('message', handler);
         };
     }, [backendUrl, subscribe, client]);
 };

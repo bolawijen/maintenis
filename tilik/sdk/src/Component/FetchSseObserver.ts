@@ -1,3 +1,5 @@
+import untry from '../Helper/untry';
+
 async function* createLineReader(reader) {
     let buffer;
     let position = 0; // current read position
@@ -57,7 +59,7 @@ async function* createLineReader(reader) {
             fieldLength = -1;
         }
         if (lineStart === bufLength) {
-            buffer = undefined; // we've finished reading it
+            buffer = undefined; // we've finished reading it;
         }
         else if (lineStart !== 0) {
             // Create a new view into buffer beginning at lineStart so we don't
@@ -162,9 +164,11 @@ async function* createEventMessageReader(
             message.data = message.data ? message.data + "\n" + part.value : part.value;
         } else if (isEventSourceMessagePartEvent(part)) {
             message.event = part.value;
-        } else if (isEventSourceMessagePartId(part)) {
+        }
+        else if (isEventSourceMessagePartId(part)) {
             message.id = part.value;
-        } else if (isEventSourceMessagePartRetry(part)) {
+        }
+        else if (isEventSourceMessagePartRetry(part)) {
             message.retry = part.value;
         }
     }
@@ -174,94 +178,185 @@ async function* createEventMessageReader(
     }
 }
 
+interface Connection {
+    controller: AbortController | null;
+    readyState: number;
+    fetch: Promise<Response>;
+}
+
+const connections = new Map<string, Connection>();
+
 export class FetchSseObserver {
     public url: string;
     public readonly client = fetch;
-    private controller: AbortController | null = null;
-    private listeners: ((event: MessageEvent) => void)[] = [];
-    private isClosed: boolean = false;
+    private listeners: Map<string, Set<((event: MessageEvent) => void)>> = new Map();
+    private globalListeners: Set<((event: MessageEvent) => void)> = new Set();
     private retryTimeout: ReturnType<typeof setTimeout> | undefined;
+    private closeTimeoutId: ReturnType<typeof setTimeout> | undefined; // New property
+    private connection: Connection | undefined;
 
     constructor(url: string) {
         this.url = url;
     }
 
-    subscribe(subscriber: (event: MessageEvent) => void) {
-        this.listeners.push(subscriber);
-        if (!this.controller || this.isClosed) {
+    subscribe(eventType: string, subscriber: (event: MessageEvent) => void) {
+        if (eventType === 'message') {
+            this.globalListeners.add(subscriber);
+        } else {
+            if (!this.listeners.has(eventType)) {
+                this.listeners.set(eventType, new Set());
+            }
+            this.listeners.get(eventType)?.add(subscriber);
+        }
+
+        if (!this.connection || this.connection.readyState === EventSource.CLOSED) {
             this.connect();
         }
     }
 
-    unsubscribe(subscriber: (event: MessageEvent) => void) {
-        // console.debug('FetchSseObserver.unsubscribe')
-        this.listeners = this.listeners.filter((listener) => listener !== subscriber);
-        // Do not close the eventSource here, it will be closed by useServerSentEvents hook
-        // if (this.listeners.length === 0) {
-        //     this.close();
-        // }
+    unsubscribe(eventType: string, subscriber: (event: MessageEvent) => void) {
+        if (eventType === 'message') {
+            this.globalListeners.delete(subscriber);
+        }
+        else {
+            this.listeners.get(eventType)?.delete(subscriber);
+            if (this.listeners.get(eventType)?.size === 0) {
+                this.listeners.delete(eventType);
+            }
+        }
+        // If no more global listeners and no more specific listeners, close the event source
+        if (this.globalListeners.size === 0 && this.listeners.size === 0) {
+            this.close();
+        }
     }
 
     close() {
-        if (this.controller) {
-            this.controller.abort();
-            this.controller = null;
-        }
-        this.isClosed = true;
+        // Clear any pending retry or close timeouts
         if (this.retryTimeout) {
             clearTimeout(this.retryTimeout);
             this.retryTimeout = undefined;
         }
+        if (this.closeTimeoutId) {
+            clearTimeout(this.closeTimeoutId);
+            this.closeTimeoutId = undefined;
+        }
+
+        if (this.connection?.controller) {
+            if (this.connection.readyState === EventSource.CONNECTING) {
+                // Schedule abort if still connecting
+                this.closeTimeoutId = setTimeout(() => {
+                    if (this.connection?.controller && this.connection.readyState === EventSource.CONNECTING) {
+                        this.connection.controller.abort();
+                        this.connection.controller = null;
+                        this.connection.readyState = EventSource.CLOSED; // Set to CLOSED after abort
+                    }
+                    this.closeTimeoutId = undefined; // Clear timeout ID after execution
+                }, 2000); // 2 seconds delay
+            } else {
+                // Abort immediately if not connecting (already open or closed)
+                this.connection.controller.abort();
+                this.connection.controller = null;
+                this.connection.readyState = EventSource.CLOSED; // Set to CLOSED immediately
+            }
+        } else {
+            // If no controller, just ensure state is closed if connection exists
+            if (this.connection) {
+                this.connection.readyState = EventSource.CLOSED;
+            }
+        }
+
+        // Clear all listeners and remove from global connections map
+        this.listeners.clear();
+        this.globalListeners.clear();
+        connections.delete(this.url);
     }
 
     private async connect() {
-        this.isClosed = false;
-        this.controller = new AbortController();
-        const { signal } = this.controller;
+        this.connection = connections.get(this.url);
 
-        try {
-            const response = await fetch(this.url, { signal });
+        // if (!this.connection || this.connection.readyState !== EventSource.CONNECTING) {
+            const controller = new AbortController();
+            const { signal } = controller;
 
-            if (!response.ok || !response.body) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            this.connection = {
+                controller,
+                readyState: EventSource.CONNECTING, // Initial state
+                fetch: fetch(this.url, { signal }),
             }
 
-            const reader = response.body.getReader();
-            for await (const message of createEventMessageReader(reader)) {
-                if (this.isClosed) break; // Stop processing if closed
+            connections.set(this.url, this.connection);
+        // }
+
+        const [response, fetchError] = await untry<Response, Error>(this.connection.fetch);
+
+        if (fetchError) {
+            if (fetchError.name !== 'AbortError') {
+                this.retryConnection();
+            }
+            return;
+        }
+
+        if (!response || !response.ok || !response.body) {
+            this.retryConnection();
+            return;
+        }
+
+        this.connection.readyState = EventSource.OPEN;
+
+        const [reader, readerError] = untry(response.body!.getReader.bind(response.body!));
+
+        if (readerError) {
+            console.error(
+                '[FetchSseObserver] CRITICAL LOGIC ERROR: Attempted to read a locked stream. Connection will be terminated without retry.',
+                readerError,
+            );
+            this.connection.readyState = EventSource.CLOSED;
+            return;
+        }
+        if (!reader) {
+            this.connection.readyState = EventSource.CLOSED;
+            return;
+        }
+
+        const [_, streamError] = await untry(async () => {
+            for await (const message of createEventMessageReader(reader as ReadableStreamDefaultReader<Uint8Array>)) {
+                if (this.connection?.readyState === EventSource.CLOSED) break;
 
                 if (message.retry !== undefined) {
-                    // Handle retry logic if needed, though fetch-event-source usually handles it
-                    // For now, we'll just log it or use it for a custom retry mechanism
-                    
+                    // Handle retry logic if needed
                 }
-
-                // Dispatch the message as a MessageEvent
-                const event = new MessageEvent(message.event || 'message', {
-                    data: message.data,
-                    lastEventId: message.id || '',
-                    origin: new URL(this.url).origin,
-                });
                 
-                this.handle(event);
+                this.handle(message);
             }
-        } catch (error: any) {
-            if (error.name === 'AbortError') {
-                // SSE connection aborted. (No need to log debug here)
-                // console.error(error);
-            } else {
-                // SSE connection failed. Implement retry logic if needed.
-                // console.error('SSE connection failed:', error);
-                if (!this.isClosed) {
-                    const retryDelay = 3000; // Default retry delay
-                    // console.debug(`Retrying SSE connection in ${retryDelay / 1000} seconds...`);
-                    this.retryTimeout = setTimeout(() => this.connect(), retryDelay);
-                }
-            }
+        });
+
+        if (streamError) {
+            // console.error('[FetchSseObserver] Error reading stream. Connection terminated.', streamError);
+        }
+
+        if (this.connection && this.connection.readyState !== EventSource.CLOSED) {
+            this.connection.readyState = EventSource.CLOSED;
         }
     }
 
-    private handle(event: MessageEvent) {
-        this.listeners.forEach((listener) => listener(event));
+    private retryConnection(retryDelay = 3000) {
+        if (this.connection && this.connection.readyState !== EventSource.CLOSED) {
+            this.retryTimeout = setTimeout(() => this.connect(), retryDelay);
+        }
+    }
+
+    private handle(message: EventMessage) {
+        const event = new MessageEvent(message.event || 'message', {
+            data: message.data,
+            lastEventId: message.id,
+        });
+
+        // Dispatch to global listeners
+        this.globalListeners.forEach((listener) => listener(event));
+
+        // Dispatch to specific listeners
+        if (this.listeners.has(event.type)) {
+            this.listeners.get(event.type)?.forEach((listener) => listener(event));
+        }
     }
 }
