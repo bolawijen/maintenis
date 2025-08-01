@@ -178,6 +178,7 @@ export const routes = {
       const collector = url.searchParams.get('collector');
 
       // This route now only handles other cases, as log data is moved to a specific route
+      // This route now only handles other cases, as log data is moved to a specific route
       return createResponse(200, { data: { id: id, collector: collector, details: "Mock details for " + collector } });
     },
   },
