@@ -1,12 +1,15 @@
 {
   "scripts": {
-    "dev": "bun index.html --watch --host=0.0.0.0"
+    "dev": "bun-1.2.14 index.html --watch --host=0.0.0.0",
+    "test:e2e": "bunx playwright test"
   },
   "devDependencies": {
     "@macfja/svelte-persistent-store": "^2.4.2",
+    "@playwright/test": "^1.54.2",
     "@roxi/routify": "file:./bun-plugins/routify",
     "@types/bun": "^1.2.19",
     "bun-plugin-svelte": "^0.0.6",
+    "playwright": "^1.54.2",
     "svelte": "^5.37.2"
   }
 }
