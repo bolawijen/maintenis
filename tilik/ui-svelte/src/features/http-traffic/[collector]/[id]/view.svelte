@@ -36,6 +36,7 @@
           // or re-fetch the current page to include the new log.
           // For now, let's just add it if it's on the first page.
           if (currentPage === 1) {
+            logs.pop();
             logs.unshift(message.payload);
             // If we add a new log, the total count might change, so re-fetch totalLogs
             totalLogs++;
