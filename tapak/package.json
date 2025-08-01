@@ -8,7 +8,8 @@
     "dev": "bun --watch server.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "vite": "^7.0.6"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

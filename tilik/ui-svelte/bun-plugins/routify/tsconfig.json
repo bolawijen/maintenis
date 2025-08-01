@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+        "module": "ES2022",
+        "checkJs": true,
+        "allowJs": true,
+        "declaration": true,
+        "moduleResolution": "Node",
+        "rootDirs": ["."],
+        "target": "ES2017",
+        "declarationDir": "typings",
+        "emitDeclarationOnly": true,
+        "allowSyntheticDefaultImports": true
+    },
+    "include": [
+        "types/**/*.js",
+         "lib/**/*.js",
+         "plugins/**/*.js",
+         "node_modules/probs"
+        ],
+    "exclude": [
+        "**/tmp/*",
+        "**/.history/*",
+        "test",
+        "examples",
+        "site",
+        "jest.config.js",
+        "lib/extra/vite-plugin/assets",
+        "typings"
+    ]
+}

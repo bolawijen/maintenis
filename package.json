@@ -1,6 +1,12 @@
 {
+  "name": "maintenis-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "tilik/sdk-core",
+    "tilik/sdk-react"
+  ],
   "scripts": {
-    "dev": "bun --filter './debug/**' index.ts",
-    "build:tilik-sdk": "cd tilik/sdk && bun run build"
+    "install-workspaces": "bun install"
   }
 }

@@ -1,0 +1,5 @@
+[workspaces]
+packages = [
+  "tilik/sdk-core",
+  "tilik/sdk-react"
+]

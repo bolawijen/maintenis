@@ -1,0 +1,210 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`test/integration/routify/routify.test.js/can run routify with bundled plugins: bundles 1`] = `
+"export * as _default_admin from '../../../example/admin/_reset.svelte'
+export * as _default_admin_bundleme_svelte from '../../../example/admin/bundleme.svelte'"
+`;
+
+exports[`test/integration/routify/routify.test.js/can run routify with bundled plugins: routify 1`] = `
+"// @ts-nocheck
+
+
+export const routes = {
+  \\"meta\\": {},
+  \\"id\\": \\"_default\\",
+  \\"name\\": \\"\\",
+  \\"file\\": {
+    \\"path\\": \\"test/integration/routify/example/_module.svelte\\",
+    \\"dir\\": \\"test/integration/routify/example\\",
+    \\"base\\": \\"_module.svelte\\",
+    \\"ext\\": \\".svelte\\",
+    \\"name\\": \\"_module\\"
+  },
+  \\"asyncModule\\": () => import('../../example/_module.svelte'),
+  \\"rootName\\": \\"default\\",
+  \\"routifyDir\\": import.meta.url,
+  \\"children\\": [
+    {
+      \\"meta\\": {
+        \\"reset\\": true,
+        \\"bundle\\": true
+      },
+      \\"id\\": \\"_default_admin\\",
+      \\"name\\": \\"admin\\",
+      \\"file\\": {
+        \\"path\\": \\"test/integration/routify/example/admin/_reset.svelte\\",
+        \\"dir\\": \\"test/integration/routify/example/admin\\",
+        \\"base\\": \\"_reset.svelte\\",
+        \\"ext\\": \\".svelte\\",
+        \\"name\\": \\"_reset\\"
+      },
+      \\"asyncModule\\": () => import(\\"./bundles/bundle-_default_admin.js\\").then(r => r._default_admin),
+      \\"children\\": [
+        {
+          \\"meta\\": {},
+          \\"id\\": \\"_default_admin_bundleme_svelte\\",
+          \\"name\\": \\"bundleme\\",
+          \\"file\\": {
+            \\"path\\": \\"test/integration/routify/example/admin/bundleme.svelte\\",
+            \\"dir\\": \\"test/integration/routify/example/admin\\",
+            \\"base\\": \\"bundleme.svelte\\",
+            \\"ext\\": \\".svelte\\",
+            \\"name\\": \\"bundleme\\"
+          },
+          \\"asyncModule\\": () => import(\\"./bundles/bundle-_default_admin.js\\").then(r => r._default_admin_bundleme_svelte),
+          \\"children\\": []
+        }
+      ]
+    },
+    {
+      \\"meta\\": {},
+      \\"id\\": \\"_default_blog\\",
+      \\"name\\": \\"blog\\",
+      \\"module\\": false,
+      \\"file\\": {
+        \\"path\\": \\"test/integration/routify/example/blog\\",
+        \\"dir\\": \\"test/integration/routify/example\\",
+        \\"base\\": \\"blog\\",
+        \\"ext\\": \\"\\",
+        \\"name\\": \\"blog\\"
+      },
+      \\"children\\": [
+        {
+          \\"meta\\": {
+            \\"dynamic\\": true,
+            \\"order\\": false
+          },
+          \\"id\\": \\"_default_blog__slug__svelte\\",
+          \\"name\\": \\"[slug]\\",
+          \\"file\\": {
+            \\"path\\": \\"test/integration/routify/example/blog/[slug].svelte\\",
+            \\"dir\\": \\"test/integration/routify/example/blog\\",
+            \\"base\\": \\"[slug].svelte\\",
+            \\"ext\\": \\".svelte\\",
+            \\"name\\": \\"[slug]\\"
+          },
+          \\"asyncModule\\": () => import('../../example/blog/[slug].svelte'),
+          \\"children\\": []
+        },
+        {
+          \\"meta\\": {
+            \\"dynamic\\": true,
+            \\"order\\": false
+          },
+          \\"id\\": \\"_default_blog_prefixed_slug__svelte\\",
+          \\"name\\": \\"prefixed[slug]\\",
+          \\"file\\": {
+            \\"path\\": \\"test/integration/routify/example/blog/prefixed[slug].svelte\\",
+            \\"dir\\": \\"test/integration/routify/example/blog\\",
+            \\"base\\": \\"prefixed[slug].svelte\\",
+            \\"ext\\": \\".svelte\\",
+            \\"name\\": \\"prefixed[slug]\\"
+          },
+          \\"asyncModule\\": () => import('../../example/blog/prefixed[slug].svelte'),
+          \\"children\\": []
+        }
+      ]
+    },
+    {
+      \\"meta\\": {
+        \\"isDefault\\": true
+      },
+      \\"id\\": \\"_default_index_svelte\\",
+      \\"name\\": \\"index\\",
+      \\"file\\": {
+        \\"path\\": \\"test/integration/routify/example/index.svelte\\",
+        \\"dir\\": \\"test/integration/routify/example\\",
+        \\"base\\": \\"index.svelte\\",
+        \\"ext\\": \\".svelte\\",
+        \\"name\\": \\"index\\"
+      },
+      \\"asyncModule\\": () => import('../../example/index.svelte'),
+      \\"children\\": []
+    },
+    {
+      \\"meta\\": {},
+      \\"id\\": \\"_default_no_layouts\\",
+      \\"name\\": \\"no-layouts\\",
+      \\"module\\": false,
+      \\"file\\": {
+        \\"path\\": \\"test/integration/routify/example/no-layouts\\",
+        \\"dir\\": \\"test/integration/routify/example\\",
+        \\"base\\": \\"no-layouts\\",
+        \\"ext\\": \\"\\",
+        \\"name\\": \\"no-layouts\\"
+      },
+      \\"children\\": [
+        {
+          \\"meta\\": {},
+          \\"id\\": \\"_default_no_layouts_nested\\",
+          \\"name\\": \\"nested\\",
+          \\"module\\": false,
+          \\"file\\": {
+            \\"path\\": \\"test/integration/routify/example/no-layouts/nested\\",
+            \\"dir\\": \\"test/integration/routify/example/no-layouts\\",
+            \\"base\\": \\"nested\\",
+            \\"ext\\": \\"\\",
+            \\"name\\": \\"nested\\"
+          },
+          \\"children\\": [
+            {
+              \\"meta\\": {},
+              \\"id\\": \\"_default_no_layouts_nested_foo_svelte\\",
+              \\"name\\": \\"foo\\",
+              \\"file\\": {
+                \\"path\\": \\"test/integration/routify/example/no-layouts/nested/foo.svelte\\",
+                \\"dir\\": \\"test/integration/routify/example/no-layouts/nested\\",
+                \\"base\\": \\"foo.svelte\\",
+                \\"ext\\": \\".svelte\\",
+                \\"name\\": \\"foo\\"
+              },
+              \\"asyncModule\\": () => import('../../example/no-layouts/nested/foo.svelte'),
+              \\"children\\": []
+            },
+            {
+              \\"meta\\": {
+                \\"isDefault\\": true
+              },
+              \\"id\\": \\"_default_no_layouts_nested_index_svelte\\",
+              \\"name\\": \\"index\\",
+              \\"file\\": {
+                \\"path\\": \\"test/integration/routify/example/no-layouts/nested/index.svelte\\",
+                \\"dir\\": \\"test/integration/routify/example/no-layouts/nested\\",
+                \\"base\\": \\"index.svelte\\",
+                \\"ext\\": \\".svelte\\",
+                \\"name\\": \\"index\\"
+              },
+              \\"asyncModule\\": () => import('../../example/no-layouts/nested/index.svelte'),
+              \\"children\\": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      \\"meta\\": {
+        \\"dynamic\\": true,
+        \\"dynamicSpread\\": true,
+        \\"order\\": false,
+        \\"inline\\": false
+      },
+      \\"name\\": \\"[...404]\\",
+      \\"file\\": {
+        \\"path\\": \\"test/integration/routify/temp/.routify/components/[...404].svelte\\",
+        \\"dir\\": \\"test/integration/routify/temp/.routify/components\\",
+        \\"base\\": \\"[...404].svelte\\",
+        \\"ext\\": \\".svelte\\",
+        \\"name\\": \\"[...404]\\"
+      },
+      \\"asyncModule\\": () => import('../../../../../C:/Users/jakob/development/@roxi/routify/test/integration/routify/temp/.routify/components/[...404].svelte'),
+      \\"children\\": []
+    }
+  ]
+}
+export default routes"
+`;
+
+exports[`test/integration/routify/routify.test.js/can transform output files: routify-transform 1`] = `
+"export * as _default_admin from '../../../example/admin/_reset.svelte'
+export * as _default_admin_bundleme_svelte from '../../../example/admin/bundleme.svelte'"
+`;

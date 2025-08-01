@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "dev": "bun index.html --watch --host=0.0.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.19",
+    "@roxi/routify": "file:./bun-plugins/routify",
+    "bun-plugin-svelte": "^0.0.6",
+    "svelte": "^5.37.1"
+  }
+}

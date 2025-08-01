@@ -6,12 +6,11 @@ globalThis.serverIdleTimeout = 255;
 
 await initializeLogWriter();
 
-serve({
-  port: 8081,
+const server = serve({
   hostname: "0.0.0.0",
   idleTimeout: globalThis.serverIdleTimeout,
   // @ts-ignore
   routes,
 });
 
-console.log("Bun server listening on port 8081");
+console.log(`Tapak server started on ${server.url}`);
