@@ -12,6 +12,7 @@
   let currentPage = $state(1);
   const perPage = 30;
   let totalLogs = $state(0);
+  let newLogsCount = $state(0); // Changed from hasNewLogs to newLogsCount
 
   // Effect for fetching log details (pagination)
   $effect(() => {
@@ -32,14 +33,13 @@
 
       unsubscribeSse = messageStore.subscribe(message => {
         if (message && message.type === EventTypesEnum.LogUpdated && message.payload) {
-          // For real-time updates, we might want to add to the beginning
-          // or re-fetch the current page to include the new log.
-          // For now, let's just add it if it's on the first page.
           if (currentPage === 1) {
             logs.pop();
             logs.unshift(message.payload);
-            // If we add a new log, the total count might change, so re-fetch totalLogs
             totalLogs++;
+            newLogsCount = 0; // Reset count if on first page
+          } else {
+            newLogsCount++; // Increment count if not on first page
           }
         }
       });
@@ -59,6 +59,7 @@
     errorMessage = '';
     logEntry = null;
     logs = []; // Clear both
+    newLogsCount = 0; // Reset new logs count on fetch
 
     try {
       let response;
@@ -90,12 +91,6 @@
         } else {
           errorMessage = 'Invalid data format received for log list.';
         }
-      } else {
-        if (data.data) {
-          logEntry = data.data;
-        } else {
-          errorMessage = 'Log entry not found.';
-        }
       }
     } catch (error) {
       errorMessage = `Failed to load log details: ${error.message}`;
@@ -106,7 +101,7 @@
   function goToPage(page) {
     if (page > 0 && page <= Math.ceil(totalLogs / perPage)) {
       currentPage = page;
-      // fetchLogDetails(collector, id, currentPage, perPage); // Removed: $effect will handle this
+      newLogsCount = 0; // Reset new logs count when navigating pages
     }
   }
 
@@ -206,6 +201,27 @@
     font-size: 1em;
     color: #333;
   }
+
+  .refresh-button-container {
+    margin-bottom: 10px;
+    text-align: right;
+  }
+
+  .refresh-button-container button {
+    padding: 8px 15px;
+    border: none;
+    background-color: #28a745; /* Green color for refresh */
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+  }
+
+  .new-logs-button {
+    background-color: #ffc107; /* Yellow for new logs */
+    color: #333;
+    margin-right: 10px;
+  }
 </style>
 
 <div class="log-detail-container">
@@ -215,6 +231,12 @@
     <p class="error-message">{errorMessage}</p>
     {:else if collector === 'log' && id === 'bun-logs-debug-entry'}
     <h2>All Logs</h2>
+    <div class="refresh-button-container">
+        {#if newLogsCount > 0}
+            <button class="new-logs-button" onclick="{() => { goToPage(1); }}">View ({newLogsCount}) New Logs</button>
+        {/if}
+        <button onclick="{() => fetchLogDetails(collector, id, currentPage, perPage)}">Refresh</button>
+    </div>
     {#if logs.length > 0}
       <table class="log-table">
         <thead>
