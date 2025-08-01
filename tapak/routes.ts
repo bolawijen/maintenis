@@ -33,6 +33,7 @@ export async function initializeLogWriter() {
 initializeLogWriter(); // Call the initialization function
 
 type LogEntry = {
+  id: string;
   context: object;
   level: 'error' | 'info' | 'debug' | 'warning';
   line: string;
@@ -40,7 +41,7 @@ type LogEntry = {
   time: number;
 };
 
-const logRegex = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[([a-z]+)\]\[[a-z]+\] (.*)$/;
+const logRegex = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+) \[([a-z]+)\]\[[a-z]+\] (.*)$/;
 
 function parseSingleLogEntry(logLine: string): LogEntry | null {
   const match = logLine.match(logRegex);
@@ -53,6 +54,7 @@ function parseSingleLogEntry(logLine: string): LogEntry | null {
     const time = date.getTime();
 
     return {
+      id: Date.now().toString() + Math.random().toString(36).substring(2, 15),
       context: {},
       level: level,
       line: "", // No file/line info in current log format
@@ -69,14 +71,16 @@ async function parseLogFile(logFilePath: string): Promise<LogEntry[]> {
     const lines = logContent.split("\n");
     const logEntries: LogEntry[] = [];
 
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       const entry = parseSingleLogEntry(line);
       if (entry) {
+        entry.id = String(i); // Assign unique ID based on line index
         logEntries.push(entry);
       }
     }
 
-    return logEntries.sort((a, b) => b.time - a.time);
+    return logEntries; // Return in original order, sorting can be done by consumer
   } catch (error: any) {
     if (error.code === 'ENOENT') {
       return []; // Return empty array if file doesn't exist
@@ -105,7 +109,7 @@ export const routes = {
     async GET() {
       try {
         const logs = await parseLogFile(LOG_FILE_PATH);
-        return createResponse(200, logs);
+        return createResponse(200, logs.sort((a, b) => b.time - a.time)); // Sort here for /logs endpoint
       } catch (error: any) {
         if (error.code === 'ENOENT') {
           return createResponse(200, []);
@@ -122,9 +126,9 @@ export const routes = {
         const logEntries = await parseLogFile(LOG_FILE_PATH);
         const debugEntry = {
           id: "bun-logs-debug-entry", // A generic ID for the collection of logs
-          collectors: ["Log"], // Indicate that this entry contains log data
+          collectors: ["log"], // Indicate that this entry contains log data
           summary: {
-            Log: logEntries, // All parsed log entries go here
+            Log: logEntries.sort((a, b) => b.time - a.time), // Sort here for / endpoint
           },
         };
         return createResponse(200, { data: [debugEntry] }); // Return as an array of DebugEntry
@@ -144,6 +148,18 @@ export const routes = {
       return createResponse(200, { class: "MockObject", value: { id: objectId, data: "Some mock object data for " + debugEntryId } });
     },
   },
+  "/debug/api/http-traffic/log/bun-logs-debug-entry": {
+    OPTIONS: createResponse(204),
+    async GET() {
+      try {
+        const logEntries = await parseLogFile(LOG_FILE_PATH);
+        return createResponse(200, logEntries.sort((a, b) => b.time - a.time));
+      } catch (error) {
+        console.error("Error reading log file for /debug/api/http-traffic/log/bun-logs-debug-entry:", error);
+        return createResponse(500, { error: "Could not read log file for log collector" });
+      }
+    },
+  },
   "/debug/api/view/:id": {
     OPTIONS: createResponse(204),
     async GET(request: Request) {
@@ -151,20 +167,11 @@ export const routes = {
       const id = url.pathname.split('/')[4];
       const collector = url.searchParams.get('collector');
 
-      if (id === "bun-logs-debug-entry" && collector === "Log") {
-        try {
-          const logEntries = await parseLogFile(LOG_FILE_PATH);
-          return createResponse(200, { data: logEntries });
-        } catch (error) {
-          console.error("Error reading log file for /debug/api/view/log:", error);
-          return createResponse(500, { error: "Could not read log file for log collector" });
-        }
-      }
-
+      // This route now only handles other cases, as log data is moved to a specific route
       return createResponse(200, { data: { id: id, collector: collector, details: "Mock details for " + collector } });
     },
   },
-  "/debug/api/event-stream": {
+  "/debug/api/http-traffic/log-updates": {
     OPTIONS: createResponse(204),
     async GET() {
       const encoder = new TextEncoder();

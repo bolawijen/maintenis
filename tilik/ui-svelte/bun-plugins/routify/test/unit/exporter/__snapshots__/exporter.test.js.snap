@@ -1,0 +1,161 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`test/unit/exporter/exporter.test.js/can export a route tree 1`] = `
+"
+
+export default {
+  \\"meta\\": {},
+  \\"id\\": \\"_default\\",
+  \\"_regex\\": {},
+  \\"_paramKeys\\": {},
+  \\"module\\": \\"test/unit/exporter/example/_module.svelte\\",
+  \\"file\\": {
+    \\"path\\": \\"test/unit/exporter/example/_module.svelte\\",
+    \\"dir\\": \\"test/unit/exporter/example\\",
+    \\"base\\": \\"_module.svelte\\",
+    \\"ext\\": \\".svelte\\",
+    \\"name\\": \\"_module\\"
+  },
+  \\"rootName\\": \\"default\\",
+  \\"children\\": [
+    {
+      \\"meta\\": {
+        \\"reset\\": true
+      },
+      \\"id\\": \\"_default_admin\\",
+      \\"_regex\\": {},
+      \\"_paramKeys\\": {},
+      \\"name\\": \\"admin\\",
+      \\"module\\": \\"test/unit/exporter/example/admin/_reset.svelte\\",
+      \\"file\\": {
+        \\"path\\": \\"test/unit/exporter/example/admin/_reset.svelte\\",
+        \\"dir\\": \\"test/unit/exporter/example/admin\\",
+        \\"base\\": \\"_reset.svelte\\",
+        \\"ext\\": \\".svelte\\",
+        \\"name\\": \\"_reset\\"
+      },
+      \\"children\\": [
+        {
+          \\"meta\\": {},
+          \\"id\\": \\"_default_admin_index_svelte\\",
+          \\"_regex\\": {},
+          \\"_paramKeys\\": {},
+          \\"name\\": \\"index\\",
+          \\"module\\": \\"test/unit/exporter/example/admin/index.svelte\\",
+          \\"file\\": {
+            \\"path\\": \\"test/unit/exporter/example/admin/index.svelte\\",
+            \\"dir\\": \\"test/unit/exporter/example/admin\\",
+            \\"base\\": \\"index.svelte\\",
+            \\"ext\\": \\".svelte\\",
+            \\"name\\": \\"index\\"
+          },
+          \\"children\\": []
+        },
+        {
+          \\"meta\\": {},
+          \\"id\\": \\"_default_admin_page_svelte\\",
+          \\"_regex\\": {},
+          \\"_paramKeys\\": {},
+          \\"name\\": \\"page\\",
+          \\"module\\": \\"test/unit/exporter/example/admin/page.svelte\\",
+          \\"file\\": {
+            \\"path\\": \\"test/unit/exporter/example/admin/page.svelte\\",
+            \\"dir\\": \\"test/unit/exporter/example/admin\\",
+            \\"base\\": \\"page.svelte\\",
+            \\"ext\\": \\".svelte\\",
+            \\"name\\": \\"page\\"
+          },
+          \\"children\\": []
+        }
+      ]
+    },
+    {
+      \\"meta\\": {},
+      \\"id\\": \\"_default_blog\\",
+      \\"_regex\\": {},
+      \\"_paramKeys\\": {},
+      \\"name\\": \\"blog\\",
+      \\"module\\": false,
+      \\"file\\": {
+        \\"path\\": \\"test/unit/exporter/example/blog\\",
+        \\"dir\\": \\"test/unit/exporter/example\\",
+        \\"base\\": \\"blog\\",
+        \\"ext\\": \\"\\",
+        \\"name\\": \\"blog\\"
+      },
+      \\"children\\": [
+        {
+          \\"meta\\": {
+            \\"dynamic\\": true
+          },
+          \\"id\\": \\"_default_blog__slug__svelte\\",
+          \\"_regex\\": {},
+          \\"_paramKeys\\": {},
+          \\"name\\": \\"[slug]\\",
+          \\"module\\": \\"test/unit/exporter/example/blog/[slug].svelte\\",
+          \\"file\\": {
+            \\"path\\": \\"test/unit/exporter/example/blog/[slug].svelte\\",
+            \\"dir\\": \\"test/unit/exporter/example/blog\\",
+            \\"base\\": \\"[slug].svelte\\",
+            \\"ext\\": \\".svelte\\",
+            \\"name\\": \\"[slug]\\"
+          },
+          \\"children\\": []
+        },
+        {
+          \\"meta\\": {
+            \\"dynamic\\": true
+          },
+          \\"id\\": \\"_default_blog_prefixed_slug__svelte\\",
+          \\"_regex\\": {},
+          \\"_paramKeys\\": {},
+          \\"name\\": \\"prefixed[slug]\\",
+          \\"module\\": \\"test/unit/exporter/example/blog/prefixed[slug].svelte\\",
+          \\"file\\": {
+            \\"path\\": \\"test/unit/exporter/example/blog/prefixed[slug].svelte\\",
+            \\"dir\\": \\"test/unit/exporter/example/blog\\",
+            \\"base\\": \\"prefixed[slug].svelte\\",
+            \\"ext\\": \\".svelte\\",
+            \\"name\\": \\"prefixed[slug]\\"
+          },
+          \\"children\\": []
+        }
+      ]
+    },
+    {
+      \\"meta\\": {},
+      \\"id\\": \\"_default_index_svelte\\",
+      \\"_regex\\": {},
+      \\"_paramKeys\\": {},
+      \\"name\\": \\"index\\",
+      \\"module\\": \\"test/unit/exporter/example/index.svelte\\",
+      \\"file\\": {
+        \\"path\\": \\"test/unit/exporter/example/index.svelte\\",
+        \\"dir\\": \\"test/unit/exporter/example\\",
+        \\"base\\": \\"index.svelte\\",
+        \\"ext\\": \\".svelte\\",
+        \\"name\\": \\"index\\"
+      },
+      \\"children\\": []
+    },
+    {
+      \\"meta\\": {
+        \\"dynamic\\": true,
+        \\"dynamicSpread\\": true
+      },
+      \\"_regex\\": {},
+      \\"_paramKeys\\": {},
+      \\"name\\": \\"[...404]\\",
+      \\"module\\": \\"./.routify/components/[...404].svelte\\",
+      \\"file\\": {
+        \\"path\\": \\".routify/components/[...404].svelte\\",
+        \\"dir\\": \\".routify/components\\",
+        \\"base\\": \\"[...404].svelte\\",
+        \\"ext\\": \\".svelte\\",
+        \\"name\\": \\"[...404]\\"
+      },
+      \\"children\\": []
+    }
+  ]
+}"
+`;

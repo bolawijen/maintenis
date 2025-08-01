@@ -1,0 +1,17 @@
+{
+  "name": "@maintenis/tilik-sdk-core",
+  "version": "1.0.0",
+  "description": "Core SDK for Tilik, framework-agnostic components.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target browser --format esm"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

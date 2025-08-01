@@ -1,0 +1,5 @@
+preload = ['./plugins.ts']
+
+[serve.static]
+plugins = ['./bun-plugins/bun-plugin-svelte/index.ts', '@roxi/routify/bun-plugin']
+env = 'PUB_*'
