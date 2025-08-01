@@ -218,14 +218,16 @@
       <table class="log-table">
         <thead>
           <tr>
+            <th>No.</th>
             <th>Timestamp</th>
             <th>Level</th>
             <th>Message</th>
           </tr>
         </thead>
         <tbody>
-          {#each logs as log (log.id)}
+          {#each logs as log, index (log.id)}
             <tr style="{getLogLevelStyles(log.level)}">
+              <td>{(currentPage - 1) * perPage + index + 1}</td>
               <td>{new Date(log.time).toLocaleString()}</td>
               <td>{log.level}</td>
               <td>{log.message}</td>
