@@ -94,6 +94,7 @@ const defaultHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Expose-Headers": "X-Total-Count",
 };
 
 const createResponse = (status: number = 200, body: any = null, headers: HeadersInit = {}) => {
@@ -150,10 +151,19 @@ export const routes = {
   },
   "/debug/api/http-traffic/log/bun-logs-debug-entry": {
     OPTIONS: createResponse(204),
-    async GET() {
+    async GET(request: Request) {
       try {
-        const logEntries = await parseLogFile(LOG_FILE_PATH);
-        return createResponse(200, logEntries.sort((a, b) => b.time - a.time));
+        const url = new URL(request.url);
+        const limit = parseInt(url.searchParams.get('limit') || '30', 10);
+        const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+
+        const allLogEntries = await parseLogFile(LOG_FILE_PATH);
+        const sortedLogEntries = allLogEntries.sort((a, b) => b.time - a.time);
+
+        const paginatedLogs = sortedLogEntries.slice(offset, offset + limit);
+        const totalCount = allLogEntries.length;
+
+        return createResponse(200, paginatedLogs, { 'X-Total-Count': totalCount.toString() });
       } catch (error) {
         console.error("Error reading log file for /debug/api/http-traffic/log/bun-logs-debug-entry:", error);
         return createResponse(500, { error: "Could not read log file for log collector" });
