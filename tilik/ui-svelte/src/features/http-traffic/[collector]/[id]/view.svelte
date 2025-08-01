@@ -1,6 +1,8 @@
-<script>
+<script lang="ts">
   import { params } from '@roxi/routify';
   import { createSseConnection, EventTypesEnum } from '../../../../lib/sse'; // Import SSE utilities
+  import { localWritable } from '@macfja/svelte-persistent-store';
+  import { fetchLogDetails, goToPage, nextPage, prevPage, getLogLevelStyles } from './functions';
 
   let id = $state($params.id);
   let collector = $state($params.collector);
@@ -9,15 +11,43 @@
   let errorMessage = $state('');
 
   // Pagination state
-  let currentPage = $state(1);
-  const perPage = 30;
+  let currentPage = localWritable('app.pagination.currentPage', 1);
+  const perPage = localWritable('app.pagination.perPage', 30);
   let totalLogs = $state(0);
-  let newLogsCount = $state(0); // Changed from hasNewLogs to newLogsCount
+  let newLogsCount = $state(0);
+
+  // Helper functions to update state
+  function updateErrorMessage(msg) {
+    errorMessage = msg;
+  }
+  function updateLogEntry(entry) {
+    logEntry = entry;
+  }
+  function updateLogs(newLogs) {
+    logs = newLogs;
+  }
+  function updateTotalLogs(total) {
+    totalLogs = total;
+  }
+  function updateNewLogsCount(count) {
+    newLogsCount = count;
+  }
+
 
   // Effect for fetching log details (pagination)
   $effect(() => {
     if (id) {
-      fetchLogDetails(collector, id, currentPage, perPage);
+      fetchLogDetails(
+        collector,
+        id,
+        $currentPage,
+        $perPage,
+        updateErrorMessage,
+        updateLogEntry,
+        updateLogs,
+        updateTotalLogs,
+        updateNewLogsCount
+      );
     }
   });
 
@@ -33,7 +63,7 @@
 
       unsubscribeSse = messageStore.subscribe(message => {
         if (message && message.type === EventTypesEnum.LogUpdated && message.payload) {
-          if (currentPage === 1) {
+          if ($currentPage === 1) {
             logs.pop();
             logs.unshift(message.payload);
             totalLogs++;
@@ -55,78 +85,17 @@
     };
   });
 
-  async function fetchLogDetails(currentCollector, currentId, page, limit) {
-    errorMessage = '';
-    logEntry = null;
-    logs = []; // Clear both
-    newLogsCount = 0; // Reset new logs count on fetch
-
-    try {
-      let response;
-      let requestUrl;
-      if (currentCollector === 'log' && currentId === 'bun-logs-debug-entry') {
-        const offset = (page - 1) * limit;
-        requestUrl = `${process.env.PUB_TAPAK_BASE_URL}/http-traffic/log/bun-logs-debug-entry?limit=${limit}&offset=${offset}`;
-        response = await fetch(requestUrl);
-      } else {
-        requestUrl = `${process.env.PUB_TAPAK_BASE_URL}/view/${currentId}`;
-        response = await fetch(requestUrl);
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      // Read X-Total-Count header for pagination
-      if (currentCollector === 'log' && currentId === 'bun-logs-debug-entry') {
-        const totalCountHeader = response.headers.get('X-Total-Count');
-        totalLogs = totalCountHeader ? parseInt(totalCountHeader, 10) : 0;
-      }
-
-      const data = await response.json();
-
-      if (currentCollector === 'log' && currentId === 'bun-logs-debug-entry') {
-        if (Array.isArray(data)) {
-          logs = data; 
-        } else {
-          errorMessage = 'Invalid data format received for log list.';
-        }
-      }
-    } catch (error) {
-      errorMessage = `Failed to load log details: ${error.message}`;
-    }
+  // Helper functions for pagination controls
+  function handleGoToPage(page: number) {
+    goToPage(page, currentPage, (count) => (newLogsCount = count), totalLogs, $perPage);
   }
 
-  // Pagination functions
-  function goToPage(page) {
-    if (page > 0 && page <= Math.ceil(totalLogs / perPage)) {
-      currentPage = page;
-      newLogsCount = 0; // Reset new logs count when navigating pages
-    }
+  function handleNextPage() {
+    nextPage($currentPage, currentPage, (count) => (newLogsCount = count), totalLogs, $perPage);
   }
 
-  function nextPage() {
-    goToPage(currentPage + 1);
-  }
-
-  function prevPage() {
-    goToPage(currentPage - 1);
-  }
-
-  // Function to get log level styles (from React LogPanel.tsx)
-  function getLogLevelStyles(level) {
-    switch (level) {
-      case 'error':
-        return 'background-color: transparent; color: #dc3545;'; // Red
-      case 'warning':
-        return 'background-color: transparent; color: #ffc107;'; // Yellow
-      case 'info':
-        return 'background-color: transparent; color: #17a2b8;'; // Blue
-      case 'debug':
-        return 'background-color: transparent; color: #6c757d;'; // Gray
-      default:
-        return 'background-color: transparent; color: #212529;'; // Default dark
-    }
+  function handlePrevPage() {
+    prevPage($currentPage, currentPage, (count) => (newLogsCount = count), totalLogs, $perPage);
   }
 </script>
 
@@ -233,9 +202,9 @@
     <h2>All Logs</h2>
     <div class="refresh-button-container">
         {#if newLogsCount > 0}
-            <button class="new-logs-button" onclick="{() => { goToPage(1); }}">View ({newLogsCount}) New Logs</button>
+            <button class="new-logs-button" onclick="{() => { handleGoToPage(1); }}">View ({newLogsCount}) New Logs</button>
         {/if}
-        <button onclick="{() => fetchLogDetails(collector, id, currentPage, perPage)}">Refresh</button>
+        <button onclick="{() => fetchLogDetails(collector, id, $currentPage, $perPage, updateErrorMessage, updateLogEntry, updateLogs, updateTotalLogs, updateNewLogsCount)}">Refresh</button>
     </div>
     {#if logs.length > 0}
       <table class="log-table">
@@ -250,7 +219,7 @@
         <tbody>
           {#each logs as log, index (log.id)}
             <tr style="{getLogLevelStyles(log.level)}">
-              <td>{(currentPage - 1) * perPage + index + 1}</td>
+              <td>{($currentPage - 1) * $perPage + index + 1}</td>
               <td>{new Date(log.time).toLocaleString()}</td>
               <td>{log.level}</td>
               <td>{log.message}</td>
@@ -260,9 +229,9 @@
       </table>
 
       <div class="pagination-controls">
-        <button onclick="{prevPage}" disabled="{currentPage === 1}">Previous</button>
-        <span class="pagination-info">Page {currentPage} of {Math.ceil(totalLogs / perPage)} ({totalLogs} logs total)</span>
-        <button onclick="{nextPage}" disabled="{currentPage * perPage >= totalLogs}">Next</button>
+        <button onclick="{handlePrevPage}" disabled="{$currentPage === 1}">Previous</button>
+        <span class="pagination-info">Page {$currentPage} of {Math.ceil(totalLogs / $perPage)} ({totalLogs} logs total)</span>
+        <button onclick="{handleNextPage}" disabled="{$currentPage * $perPage >= totalLogs}">Next</button>
       </div>
     {:else}
       <p>No logs found.</p>

@@ -3,9 +3,10 @@
     "dev": "bun index.html --watch --host=0.0.0.0"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.19",
+    "@macfja/svelte-persistent-store": "^2.4.2",
     "@roxi/routify": "file:./bun-plugins/routify",
+    "@types/bun": "^1.2.19",
     "bun-plugin-svelte": "^0.0.6",
-    "svelte": "^5.37.1"
+    "svelte": "^5.37.2"
   }
 }
