@@ -1,53 +1,32 @@
 <script lang="ts">
-  import { params } from '@roxi/routify';
-  import { createSseConnection, EventTypesEnum } from '../../../../lib/sse'; // Import SSE utilities
-  import { localWritable } from '@macfja/svelte-persistent-store';
-  import { fetchLogDetails, goToPage, nextPage, prevPage, getLogLevelStyles } from './functions';
+  import { params } from "@roxi/routify";
+  import { createSseConnection, EventTypesEnum } from "../../../../lib/sse"; // Import SSE utilities
+
+  import { localWritable } from "@macfja/svelte-persistent-store";
+  import { goToPage, nextPage, prevPage, getLogLevelStyles } from "./functions";
+  import GridView from "../../../../lib/ui/grid-view/grid-view.svelte";
+  import { HttpFetcher } from "../../../../lib/data/http-fetcher.svelte"; // Import HttpFetcher
 
   let id = $state($params.id);
   let collector = $state($params.collector);
   let logEntry = $state(null);
-  let logs = $state([]);
-  let errorMessage = $state('');
+  let errorMessage = $state("");
 
   // Pagination state
-  let currentPage = localWritable('app.pagination.currentPage', 1);
-  const perPage = localWritable('app.pagination.perPage', 30);
-  let totalLogs = $state(0);
+  let currentPage = localWritable("app.pagination.currentPage", 1);
+  const perPage = localWritable("app.pagination.perPage", 30);
   let newLogsCount = $state(0);
 
-  // Helper functions to update state
-  function updateErrorMessage(msg) {
-    errorMessage = msg;
-  }
-  function updateLogEntry(entry) {
-    logEntry = entry;
-  }
-  function updateLogs(newLogs) {
-    logs = newLogs;
-  }
-  function updateTotalLogs(total) {
-    totalLogs = total;
-  }
-  function updateNewLogsCount(count) {
-    newLogsCount = count;
-  }
+  // Inisialisasi HttpFetcher
+  const dataFetcher = new HttpFetcher({
+    url: `${process.env.PUB_TAPAK_BASE_URL}/http-traffic/log/bun-logs-debug-entry`,
+    auth: "YOUR_AUTH_TOKEN_HERE", // Ganti dengan token otentikasi yang sebenarnya atau hapus jika tidak diperlukan
+  });
 
-
-  // Effect for fetching log details (pagination)
+  // Effect untuk memicu fetch data saat id atau paginasi berubah
   $effect(() => {
     if (id) {
-      fetchLogDetails(
-        collector,
-        id,
-        $currentPage,
-        $perPage,
-        updateErrorMessage,
-        updateLogEntry,
-        updateLogs,
-        updateTotalLogs,
-        updateNewLogsCount
-      );
+      dataFetcher.setPage($currentPage, $perPage);
     }
   });
 
@@ -56,20 +35,26 @@
     let sseObserver = null;
     let unsubscribeSse = null;
 
-    // Only establish SSE connection if viewing the all logs panel
-    if (collector === 'log' && id === 'bun-logs-debug-entry') {
-      const { observer, messageStore, handler } = createSseConnection(process.env.PUB_TAPAK_BASE_URL);
+    if (collector === "log" && id === "bun-logs-debug-entry") {
+      const { observer, messageStore, handler } = createSseConnection(
+        process.env.PUB_TAPAK_BASE_URL
+      );
       sseObserver = observer;
 
-      unsubscribeSse = messageStore.subscribe(message => {
-        if (message && message.type === EventTypesEnum.LogUpdated && message.payload) {
+      unsubscribeSse = messageStore.subscribe((message) => {
+        if (
+          message &&
+          message.type === EventTypesEnum.LogUpdated &&
+          message.payload
+        ) {
           if ($currentPage === 1) {
-            logs.pop();
-            logs.unshift(message.payload);
-            totalLogs++;
-            newLogsCount = 0; // Reset count if on first page
+            // Perbarui logs melalui dataFetcher.rows
+            dataFetcher.rows.unshift(message.payload);
+            dataFetcher.rows = dataFetcher.rows; // Trigger reactivity
+            dataFetcher.total_count++; // Perbarui total_count
+            newLogsCount = 0;
           } else {
-            newLogsCount++; // Increment count if not on first page
+            newLogsCount++;
           }
         }
       });
@@ -87,17 +72,104 @@
 
   // Helper functions for pagination controls
   function handleGoToPage(page: number) {
-    goToPage(page, currentPage, (count) => (newLogsCount = count), totalLogs, $perPage);
+    goToPage(page, currentPage, (count) => (newLogsCount = count), dataFetcher.total_count, $perPage);
+    dataFetcher.setPage(page, $perPage); // Panggil setPage
   }
 
   function handleNextPage() {
-    nextPage($currentPage, currentPage, (count) => (newLogsCount = count), totalLogs, $perPage);
+    nextPage($currentPage, currentPage, (count) => (newLogsCount = count), dataFetcher.total_count, $perPage);
+    dataFetcher.setPage($currentPage + 1, $perPage); // Panggil setPage
   }
 
   function handlePrevPage() {
-    prevPage($currentPage, currentPage, (count) => (newLogsCount = count), totalLogs, $perPage);
+    prevPage($currentPage, currentPage, (count) => (newLogsCount = count), dataFetcher.total_count, $perPage);
+    dataFetcher.setPage($currentPage - 1, $perPage); // Panggil setPage
   }
 </script>
+
+<div class="log-detail-container">
+  <h1>HTTP Traffic Detail</h1>
+
+  {#if errorMessage}
+    <p class="error-message">{errorMessage}</p>
+  {:else if collector === "log" && id === "bun-logs-debug-entry"}
+    <h2>All Logs</h2>
+    <div class="refresh-button-container">
+      {#if newLogsCount > 0}
+        <button
+          class="new-logs-button"
+          onclick={() => {
+            handleGoToPage(1);
+          }}>View ({newLogsCount}) New Logs</button
+        >
+      {/if}
+      <button
+        onclick={() =>
+          fetchLogDetails(
+            collector,
+            id,
+            $currentPage,
+            $perPage,
+            updateErrorMessage,
+            updateLogEntry,
+            updateLogs,
+            updateTotalLogs,
+            updateNewLogsCount
+          )}>Refresh</button
+      >
+    </div>
+
+    <GridView {dataFetcher}>
+      {#snippet columns()}
+        <tr>
+          <th>No.</th>
+          <th>Timestamp</th>
+          <th>Level</th>
+          <th>Message</th>
+        </tr>
+      {/snippet}
+      {#snippet dataRow(log, index)}
+        <tr style={getLogLevelStyles(log.level)}>
+          <td>{($currentPage - 1) * $perPage + index + 1}</td>
+          <td>{new Date(log.time).toLocaleString()}</td>
+          <td>{log.level}</td>
+          <td>{log.message}</td>
+        </tr>
+      {/snippet}
+    </GridView>
+
+    <div class="pagination-controls">
+      <button onclick={handlePrevPage} disabled={$currentPage === 1}
+        >Previous</button
+      >
+      <span class="pagination-info"
+        >Page {$currentPage} of {Math.ceil(dataFetcher.total_count / $perPage)} ({dataFetcher.total_count} logs
+        total)</span
+      >
+      <button
+        onclick={handleNextPage}
+        disabled={$currentPage * $perPage >= dataFetcher.total_count}>Next</button
+      >
+    </div>
+  {:else if logEntry}
+    <h2>Log Detail for ID: {id} (Collector: {collector})</h2>
+    <div class="log-detail-item">
+      <span class="log-detail-label">Timestamp:</span>
+      {new Date(logEntry.time).toLocaleString()}
+    </div>
+    <div class="log-detail-item">
+      <span class="log-detail-label">Level:</span>
+      {logEntry.level}
+    </div>
+    <div class="log-detail-item">
+      <span class="log-detail-label">Message:</span>
+      {logEntry.message}
+    </div>
+    <!-- Add more details as needed -->
+  {:else}
+    <p>Loading...</p>
+  {/if}
+</div>
 
 <style>
   /* Existing styles */
@@ -125,7 +197,8 @@
     border-collapse: collapse;
     margin-top: 20px;
   }
-  .log-table th, .log-table td {
+  .log-table th,
+  .log-table td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
@@ -150,7 +223,6 @@
     background-color: #e9ecef;
     border-radius: 8px;
   }
-
   .pagination-controls button {
     padding: 8px 15px;
     border: none;
@@ -160,22 +232,18 @@
     cursor: pointer;
     font-size: 1em;
   }
-
   .pagination-controls button:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
   }
-
   .pagination-info {
     font-size: 1em;
     color: #333;
   }
-
   .refresh-button-container {
     margin-bottom: 10px;
     text-align: right;
   }
-
   .refresh-button-container button {
     padding: 8px 15px;
     border: none;
@@ -185,67 +253,9 @@
     cursor: pointer;
     font-size: 1em;
   }
-
   .new-logs-button {
     background-color: #ffc107; /* Yellow for new logs */
     color: #333;
     margin-right: 10px;
   }
 </style>
-
-<div class="log-detail-container">
-  <h1>HTTP Traffic Detail</h1>
-
-  {#if errorMessage}
-    <p class="error-message">{errorMessage}</p>
-    {:else if collector === 'log' && id === 'bun-logs-debug-entry'}
-    <h2>All Logs</h2>
-    <div class="refresh-button-container">
-        {#if newLogsCount > 0}
-            <button class="new-logs-button" onclick="{() => { handleGoToPage(1); }}">View ({newLogsCount}) New Logs</button>
-        {/if}
-        <button onclick="{() => fetchLogDetails(collector, id, $currentPage, $perPage, updateErrorMessage, updateLogEntry, updateLogs, updateTotalLogs, updateNewLogsCount)}">Refresh</button>
-    </div>
-    {#if logs.length > 0}
-      <table class="log-table">
-        <thead>
-          <tr>
-            <th>No.</th>
-            <th>Timestamp</th>
-            <th>Level</th>
-            <th>Message</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each logs as log, index (log.id)}
-            <tr style="{getLogLevelStyles(log.level)}">
-              <td>{($currentPage - 1) * $perPage + index + 1}</td>
-              <td>{new Date(log.time).toLocaleString()}</td>
-              <td>{log.level}</td>
-              <td>{log.message}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-
-      <div class="pagination-controls">
-        <button onclick="{handlePrevPage}" disabled="{$currentPage === 1}">Previous</button>
-        <span class="pagination-info">Page {$currentPage} of {Math.ceil(totalLogs / $perPage)} ({totalLogs} logs total)</span>
-        <button onclick="{handleNextPage}" disabled="{$currentPage * $perPage >= totalLogs}">Next</button>
-      </div>
-    {:else}
-      <p>No logs found.</p>
-    {/if}
-  {:else if logEntry}
-    <h2>Log Detail for ID: {id} (Collector: {collector})</h2>
-    <div class="log-detail-item">
-      <span class="log-detail-label">Timestamp:</span> {new Date(logEntry.time).toLocaleString()}</div>
-    <div class="log-detail-item">
-      <span class="log-detail-label">Level:</span> {logEntry.level}</div>
-    <div class="log-detail-item">
-      <span class="log-detail-label">Message:</span> {logEntry.message}</div>
-    <!-- Add more details as needed -->
-  {:else}
-    <p>Loading...</p>
-  {/if}
-</div>

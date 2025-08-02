@@ -9,10 +9,22 @@ export class Fetcher {
     #sort
     rows = $state([])
     ready = $state()
+    total_count = $state(0)
+    #pagination = { current: 1, limit: 30 }; // New private pagination property
 
     constructor(options: FetcherOptions = {}) {
         this.#sort = { columns: {} }
         options.sort && this.sort(options.sort)
+    }
+
+    setPage(page: number, perPage: number) {
+        this.#pagination.current = page;
+        this.#pagination.limit = perPage;
+        this.fetch();
+    }
+
+    getPagination() {
+        return { current: this.#pagination.current, limit: this.#pagination.limit, offset: (this.#pagination.current - 1) * this.#pagination.limit };
     }
 
     sort(sort) {
@@ -25,7 +37,8 @@ export class Fetcher {
         }
         if (order) {
             this.#sort.columns[key] = order;
-        } else {
+        }
+        else {
             order = this.#sort.columns[key]
         }
         if (!['asc', 'desc'].includes(order)) {

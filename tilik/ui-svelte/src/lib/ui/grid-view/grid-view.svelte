@@ -1,5 +1,5 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onMount } from "svelte";
     import Spinner from "../spinner.svelte";
 
     let table
@@ -21,14 +21,18 @@
     <figure>
         <table bind:this={table} class="stripes {data.ready || data.rows.length || 'center-align'}">
             <thead onclick={(e) => data.sortBy(e.target.dataset.key)}>
-                {@render columns()}
+                <!-- {#if typeof columns === 'function'} -->
+                    {@render columns()}
+                <!-- {/if} -->
             </thead>
             {#if filters}
-                {@render filters()}
+                {@render filters?.()}<br />
             {/if}
             <tbody>
                 {#each data.rows as row, index}
-                    {@render dataRow(row, index)}
+                    <!-- {#if typeof dataRow === 'function'} -->
+                        {@render dataRow(row, index)}
+                    <!-- {/if} -->
                 {:else}
                     <tr><td colspan={columnLen}>
                         <div class="chip vertical">
